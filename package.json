@@ -1,0 +1,23 @@
+{
+  "name": "paginatrix",
+  "version": "0.9.3",
+  "description": "A JavaScript pagination utility",
+  "main": "src/paginatrix.js",
+  "files": [
+    "src/paginatrix.js",
+    "LICENSE",
+    "README.md"
+  ],   
+  "scripts": {
+    "test": "jasmine"
+  },
+  "keywords": [
+    "[\"pagination\"",
+    "\"javascript\"]"
+  ], 
+  "author": "adiian",
+  "license": "MIT",
+  "devDependencies": {
+    "jasmine": "^3.6.0"
+  }  
+}

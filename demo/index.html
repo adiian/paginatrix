@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paginatrix Pagination Library Test</title>
+</head>
+<body>
+    <h1>Paginatrix Pagination Library Test(Client)</h1>
+
+    <div>
+        <label for="includePrevNext">Include Previous/Next:</label>
+        <input type="checkbox" id="includePrevNext">
+    </div>
+    <div>
+        <label for="includePrevNext">Custom Previous/Next:</label>
+        <input type="checkbox" id="customPrevNext">
+    </div>    
+    <div>
+        <label for="totalItems">Total Items:</label>
+        <input type="number" id="totalItems" placeholder="Total number of items" value="105">
+    </div>
+    <div>
+        <label for="currentPage">Current Page:</label>
+        <input type="number" id="currentPage" placeholder="Current page" value="3">
+    </div>
+    <div>
+        <label for="pageSize">Page Size:</label>
+        <input type="number" id="pageSize" placeholder="Items per page" value="10">
+    </div>
+
+    <div style="text-align:center;">
+        Current Page: <span id="currentPageDisplay">1</span>
+    </div>
+    <div id="paginationResult"></div>
+    
+    <script src="../src/paginatrix.js"></script>
+    <style>
+        #paginationResult{
+            text-align: center;
+        }
+    </style>
+    <script>
+        const PAGES_CHUNK = 5; // Define how many pages to skip
+
+        function generatePagination() {
+            const totalItems = parseInt(document.getElementById('totalItems').value, 10);
+            let currentPage = parseInt(document.getElementById('currentPage').value, 10);
+            const pageSize = parseInt(document.getElementById('pageSize').value, 10);
+            const includePrevNext = document.getElementById('includePrevNext').checked;
+            const customPrevNext = document.getElementById('customPrevNext').checked;
+            
+        
+            // Update current page display
+            document.getElementById('currentPageDisplay').textContent = currentPage;
+        
+            const paginatorOptions = { pageSize: pageSize, includePrevNext: includePrevNext };
+            const paginator = new Paginatrix(paginatorOptions);
+            const pages = paginator.getPages(totalItems, currentPage);
+        
+            const paginationDiv = document.getElementById('paginationResult');
+            paginationDiv.innerHTML = ''; 
+
+
+            let prevNext = paginator.getPrevNext(totalItems, currentPage);
+
+            if (customPrevNext){
+            // Create and append Prev button if it exists
+                if (prevNext.prev) {
+                    let prevButton = document.createElement('a');
+                    prevButton.href = '#';
+                    prevButton.textContent = 'Prev';
+                    prevButton.style.margin = '5px';
+                    prevButton.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        document.getElementById('currentPage').value = prevNext.prev.page;
+                        generatePagination();
+                    });
+                    paginationDiv.appendChild(prevButton);
+                }
+            }
+
+        
+            pages.forEach(item => {
+                let button;
+                if (item.current) {
+                    button = document.createElement('span');
+                    button.style.fontWeight = 'bold';
+                } else {
+                    button = document.createElement('a');
+                    button.href = '#';
+                    button.addEventListener('click', function(e) {
+                        e.preventDefault(); // Prevent default anchor action
+                        if (item.page) {
+                            currentPage = parseInt(item.page, 10);
+                        }
+                        document.getElementById('currentPage').value = currentPage;
+                        generatePagination(); // Recalculate pagination with updated current page
+                    });
+                }
+                button.textContent = item.label; 
+                button.style.margin = '5px';
+                paginationDiv.appendChild(button);
+            });
+
+
+            if (customPrevNext){
+                // Create and append Next button if it exists
+                if (prevNext.next) {
+                    let nextButton = document.createElement('a');
+                    nextButton.href = '#';
+                    nextButton.textContent = 'Next';
+                    nextButton.style.margin = '5px';
+                    nextButton.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        document.getElementById('currentPage').value = prevNext.next.page;
+                        generatePagination();
+                    });
+                    paginationDiv.appendChild(nextButton);
+                }    
+                        
+            }        
+        }
+        
+        // Attach event listeners to inputs and checkbox for automatic updates
+        ['totalItems', 'currentPage', 'pageSize', 'includePrevNext', 'customPrevNext'].forEach(id => {
+            document.getElementById(id).addEventListener('input', generatePagination);
+        });
+        
+        generatePagination(); // Initial call to display pagination
+    </script>
+</body>
+</html>
