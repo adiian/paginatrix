@@ -1,6 +1,6 @@
 {
   "name": "paginatrix",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "description": "A JavaScript pagination utility",
   "main": "src/paginatrix.js",
   "files": [
