@@ -30,8 +30,21 @@ function Paginatrix(options){
 
     // TODO consistent mechanism with type check for all the params
     let opts = {
-        includePrevNext: typeof options === 'object' && options.includePrevNext 
+        setHrefs: typeof options === 'object' && options.setHrefs ,
+        hrefMapper: typeof options === 'object' && options.hrefMapper && typeof(options.hrefMapper) ? options.hrefMapper : ( page => page === 1 ? `/` : `/page/${page}/` ),
+
+        prevNextInList: typeof options === 'object' && options.prevNextInList,
+        prevNext: { labels: { '<' : '<', '>' : '>' } }
     }    
+
+    this.includeHrefs = (mapper) => {
+        opts.hrefMapper = mapper;
+    }
+
+    this.includePrevNext = (labels) => {
+        opts.prevNext = { labels: labels };
+    }
+
 
     PAGE_SIZE = 
         typeof options === 'object' 
@@ -80,16 +93,78 @@ function Paginatrix(options){
     ]
     */
 
-    this.getPages = (count, currentPage) => {
+    this.paginate = (count, currentPage) => {
+
+        count = parseInt(count);
+        currentPage = parseInt(currentPage);
+
+        let pageCount = Math.ceil(count / PAGE_SIZE);
+
+
+        let pagination = { pages: this._getPages(count, currentPage) };
+
+        this._setPrevNext(pagination, currentPage, pageCount);
+        this._mapHrefs(pagination, currentPage);
+
+        pagination.current = {page: currentPage, current: true};
+
+        // selected represents the selected page(when the indicated currentPage is out of boundaries, selected is the closest valid page, first or last)
+        pagination.selected = {page: Math.min(Math.max(currentPage, 1), pageCount)} ;
+        pagination.selected.current = pagination.selected.page === currentPage;
+
+        pagination.first = { page: 1, current: currentPage === 1 };
+        pagination.last = { page: pageCount, current: currentPage === pageCount };
+
+        pagination.count = count;
+        pagination.pageCount = pageCount;
+
+        if (opts.hrefMapper){
+            setHrefs([pagination.selected, pagination.first, pagination.last], currentPage, opts.hrefMapper);            
+        }
+
+        return pagination;
+    }
+
+    this._setPrevNext = (res, currentPage, pageCount) => {
+
+        // include prev and last page 
+        if (opts.prevNextInList){
+            if (currentPage - 1 >= 1 && currentPage - 1 <= pageCount)
+                res.pages.unshift( {page: currentPage - 1, label: opts.prevNext.labels['<'], current:false, type: "prev"} )
+            else
+                res.pages.unshift( {current:false, label:" ", type: "prev"} )
+
+            if (currentPage + 1 >= 1 && currentPage + 1 <= pageCount)
+                res.pages.push( {page: currentPage + 1, label: opts.prevNext.labels['>'], current:false, type: "next"} )
+            else
+                res.pages.push( {current:false, label:" ", type: "next"} )
+        }
+
+
+        if (opts.prevNext){
+            if (currentPage - 1 >= 1 && currentPage - 1 <= pageCount)
+                res.prev = { page: currentPage - 1, label: opts.prevNext.labels && opts.prevNext.labels['<'] || '<' };
+
+            if (currentPage + 1 >= 1 && currentPage + 1 <= pageCount)
+                res.next = { page: currentPage + 1, label: opts.prevNext.labels && opts.prevNext.labels['>'] || '>'  };
+        }
+    }
+
+    this._mapHrefs = (pagination, currentPage) => {
+        if (opts.hrefMapper){
+            setHrefs(pagination.pages, currentPage, opts.hrefMapper);
+            if (pagination.prev) setHrefs([pagination.prev], currentPage, opts.hrefMapper);
+            if (pagination.next) setHrefs([pagination.next], currentPage, opts.hrefMapper);
+        }
+
+    }
+
+    this._getPages = (count, currentPage) => {
 
         /**
          * Maybe more intuitive pagination that splits an array in to parts, then handle each array separately
          * each part is handled separately by addPart
-         */
-        count = parseInt(count)
-        currentPage = parseInt(currentPage)
-    
-        let res = [];
+         */    
         let pageCount = Math.ceil(count / PAGE_SIZE);
     
         let rangeHeads = RANGE_START;
@@ -101,28 +176,16 @@ function Paginatrix(options){
         let partA = {start: 1, end: Math.min(currentPage - 1, pageCount)}
         let partB = {start: Math.max(1, currentPage + 1), end: pageCount}        
 
-        
-        this._addPart(res, partA.start, partA.end, rangeHeads, rangeInternal, 0, PAGES_CHUNK, currentCursor);
+        let items = [];        
+        this._addPart(items, partA.start, partA.end, rangeHeads, rangeInternal, 0, PAGES_CHUNK, currentCursor);
     
         if ( 1 <= currentPage && currentPage <= pageCount)
-            res.push({ page:currentPage, label: currentPage.toString(), current: true })
+            items.push({ page:currentPage, label: currentPage.toString(), current: true })
     
-        this._addPart(res, partB.start, partB.end, rangeInternal, rangeHeads, 1, PAGES_CHUNK, currentCursor);
+        this._addPart(items, partB.start, partB.end, rangeInternal, rangeHeads, 1, PAGES_CHUNK, currentCursor);
 
-        // include prev and last page 
-        if (opts.includePrevNext){
-            if (currentPage - 1 >= 1 && currentPage - 1 <= pageCount)
-                res.unshift( {page: currentPage - 1, label: '<', current:false, type: "prev"} )
-            else
-                res.unshift( {current:false, label:" ", type: "prev"} )
 
-            if (currentPage + 1 >= 1 && currentPage + 1 <= pageCount)
-                res.push( {page: currentPage + 1, label: '>', current:false} )
-            else
-                res.push( {current:false, label:" ", type: "next"} )
-        }
-    
-        return res
+        return items;
     }  
 
     /**
@@ -154,23 +217,12 @@ function Paginatrix(options){
         return res
     }
 
-    this.getPrevNext = (count, currentPage) => {
-        let res = {}
-
-        count = parseInt(count)
-        currentPage = parseInt(currentPage)    
-        
-        let pageCount = Math.ceil(count / PAGE_SIZE);
-
-        if (currentPage - 1 >= 1 && currentPage - 1 <= pageCount)
-            res.prev = { page: currentPage - 1 };
-
-        if (currentPage + 1 >= 1 && currentPage + 1 <= pageCount)
-            res.next = { page: currentPage + 1 };
-
-        return res;
-    }    
-
+    function setHrefs( pages, currentPage, mapper ){
+        pages.forEach(item => {
+            if (item.page && item.page !== currentPage)
+                item.href = mapper(item.page);
+        })        
+    }
  
 
 }

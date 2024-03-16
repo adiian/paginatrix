@@ -9,11 +9,11 @@
     <h1>Paginatrix Pagination Library Test(Client)</h1>
 
     <div>
-        <label for="includePrevNext">Include Previous/Next:</label>
-        <input type="checkbox" id="includePrevNext">
+        <label for="prevNextInList">Show Previous/Next In List:</label>
+        <input type="checkbox" id="prevNextInList">
     </div>
     <div>
-        <label for="includePrevNext">Custom Previous/Next:</label>
+        <label for="customPrevNext">Custom Previous/Next:</label>
         <input type="checkbox" id="customPrevNext">
     </div>    
     <div>
@@ -47,41 +47,51 @@
             const totalItems = parseInt(document.getElementById('totalItems').value, 10);
             let currentPage = parseInt(document.getElementById('currentPage').value, 10);
             const pageSize = parseInt(document.getElementById('pageSize').value, 10);
-            const includePrevNext = document.getElementById('includePrevNext').checked;
+            const showPrevNextInList = document.getElementById('prevNextInList').checked;
             const customPrevNext = document.getElementById('customPrevNext').checked;
             
         
             // Update current page display
             document.getElementById('currentPageDisplay').textContent = currentPage;
         
-            const paginatorOptions = { pageSize: pageSize, includePrevNext: includePrevNext };
+
+            // Define options for the Paginatrix
+            let paginatorOptions = {
+                pageSize: pageSize,
+                prevNextInList: showPrevNextInList,
+                // Add more options here as needed, for example, custom labels or hrefMapper
+            };
+
+            // If using custom previous/next labels, add them to the options
+            if (customPrevNext) {
+                paginatorOptions.prevNext = { labels: { '<': 'Previous', '>': 'Next' } }; // Example custom labels
+            }            
+
+
             const paginator = new Paginatrix(paginatorOptions);
-            const pages = paginator.getPages(totalItems, currentPage);
+            const pagination = paginator.paginate(totalItems, currentPage);
         
             const paginationDiv = document.getElementById('paginationResult');
             paginationDiv.innerHTML = ''; 
-
-
-            let prevNext = paginator.getPrevNext(totalItems, currentPage);
+            
 
             if (customPrevNext){
             // Create and append Prev button if it exists
-                if (prevNext.prev) {
-                    let prevButton = document.createElement('a');
-                    prevButton.href = '#';
+                if (pagination.prev) {
+                    let prevButton = document.createElement('button');
                     prevButton.textContent = 'Prev';
                     prevButton.style.margin = '5px';
                     prevButton.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        document.getElementById('currentPage').value = prevNext.prev.page;
+                        e.preventDefault(); // This is technically not needed for a button, but left for consistency
+                        document.getElementById('currentPage').value = pagination.prev.page;
                         generatePagination();
                     });
                     paginationDiv.appendChild(prevButton);
                 }
-            }
+                        }
 
         
-            pages.forEach(item => {
+            pagination.pages.forEach(item => {
                 let button;
                 if (item.current) {
                     button = document.createElement('span');
@@ -106,14 +116,14 @@
 
             if (customPrevNext){
                 // Create and append Next button if it exists
-                if (prevNext.next) {
-                    let nextButton = document.createElement('a');
+                if (pagination.next) {
+                    let nextButton = document.createElement('button');
                     nextButton.href = '#';
                     nextButton.textContent = 'Next';
                     nextButton.style.margin = '5px';
                     nextButton.addEventListener('click', function(e) {
                         e.preventDefault();
-                        document.getElementById('currentPage').value = prevNext.next.page;
+                        document.getElementById('currentPage').value = pagination.next.page;
                         generatePagination();
                     });
                     paginationDiv.appendChild(nextButton);
@@ -123,7 +133,7 @@
         }
         
         // Attach event listeners to inputs and checkbox for automatic updates
-        ['totalItems', 'currentPage', 'pageSize', 'includePrevNext', 'customPrevNext'].forEach(id => {
+        ['totalItems', 'currentPage', 'pageSize', 'prevNextInList', 'customPrevNext'].forEach(id => {
             document.getElementById(id).addEventListener('input', generatePagination);
         });
         
